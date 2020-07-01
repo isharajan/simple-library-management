@@ -23,7 +23,7 @@ def register(request):
 	if request.method=="POST":
 		try:
 			user = User.objects.create_user(first_name=request.POST['name'], username=request.POST['email'], password=request.POST['password'])
-			user = authenticate(username=request.POST['email'], password=password)
+			user = authenticate(username=request.POST['email'], password=request.POST['password'])
 			login(request, user)
 			return redirect(view_books)
 		except IntegrityError:

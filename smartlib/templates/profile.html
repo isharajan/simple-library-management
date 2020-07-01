@@ -19,11 +19,11 @@ kathir
       </tr>
     </thead>
     <tbody>
-      {% for book in user.books %}
+      {% for book in user.books.all %}
       <tr>
-        <td>{{book.bid}}</td>
+        <td>{{book.id}}</td>
         <td>{{book.bname}}</td>
-        <td><a href="{% url 'return_book' bid=book.bid %}" class="btn btn-default"><span class="glyphicon glyphicon-circle-arrow-left"></span> Return</a></td>
+        <td><a href="{% url 'return_book' bid=book.id %}" class="btn btn-default"><span class="glyphicon glyphicon-circle-arrow-left"></span> Return</a></td>
       </tr>
       {% endfor %}
  </table>

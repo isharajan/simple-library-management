@@ -1,90 +1,66 @@
 from django.shortcuts import render, redirect
-from .mymodels import Book, mylib, Person
+from .models import Book, User, Library
+from django.db import IntegrityError
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
 
-Users = []
 
-def register_sess(request,person):
-	request.session['login'] = True
-	request.session['email'] = person.email
-
-def is_loggedin(request):
-	if request.session.get('login',False):
-		person = Person.is_available(request.session['email'])
-		if person!=False:
-			return person
-	return False
-
-def login(request):
-	person = is_loggedin(request)
-	if person:
-		return redirect('view_books')
+def login_view(request):
 	if request.method == "POST":
 		email=request.POST['email']
 		password=request.POST['password']
-		person = Person.is_valid_cred(email,password)
-		if person!= False:
-			register_sess(request,person)
+		print (request.POST,">>>>>>>>>>>>")
+		user = authenticate(request, username=email, password=password)
+		if user is not None:
+			login(request, user)
 			return redirect(view_books)
 		else:
-			return render(request,'login.html', {"error": "Wrong Credentials"})
+			return render(request,'login.html', {"error": "Wrong Credentials"})			
 	else:
 		return render(request,'login.html')
 
 def register(request):
-	person = is_loggedin(request)
-	if person:
-		return redirect('view_books')
 	if request.method=="POST":
-		person = Person.register(
-				name=request.POST['name'],
-				email=request.POST['email'],
-				phone=request.POST['phone'],
-				password=request.POST['password'],
-			)
-		if person:
-			register_sess(request,person)
+		try:
+			user = User.objects.create_user(first_name=request.POST['name'], username=request.POST['email'], password=request.POST['password'])
+			user = authenticate(username=request.POST['email'], password=password)
+			login(request, user)
 			return redirect(view_books)
-		else:
+		except IntegrityError:
 			return render(request,'register.html',{'error': "Email already registered"})
 	else:
 		return render(request,'register.html')
 
-
+@login_required(login_url='login')
 def view_books(request):
-	person = is_loggedin(request)
-	if person==False:
-		return redirect('login')
 	book_data  = []
-	for book in mylib.books:
-		book_data.append({
-				'bid':book.bid,
+	for book in Book.objects.all():
+		data = {
+				'bid':book.id,
 				'bname':book.bname,
-				'current_owner':book.current_owner.name,
-				'available':book.current_owner is mylib.admin
-			})
-	return render(request,'view_books.html',{'books':book_data, 'user':person})
+				'available':(book.current_owner is book.libery.admin) or (book.current_owner is None)
+			}
+		data['current_owner'] = book.libery.admin.username if data['available'] else book.current_owner.username
+		book_data.append(data)
+	return render(request,'view_books.html',{'books':book_data, 'user':request.user})
 
+@login_required(login_url='login')
 def buy_book(request, bid):
-	person = is_loggedin(request)
-	if person==False:
-		return redirect('login')
-	mylib.buy_book(bid, person)
+	book = Book.objects.get(id=bid)
+	request.user.books.add(book)
 	return redirect(view_books)
 
+@login_required(login_url='login')
 def return_book(request, bid):
-	person = is_loggedin(request)
-	if person==False:
-		return redirect('login')
-	mylib.submit(bid, person)
+	book = Book.objects.get(id=bid)
+	book.current_owner = None
+	book.save()
 	return redirect(profile)
 
+@login_required(login_url='login')
 def profile(request):
-	person = is_loggedin(request)
-	if person==False:
-		return redirect('login')
-	return render(request,'profile.html', {'user':person})
+	return render(request,'profile.html', {'user':request.user})
 
-def logout(request):
-	request.session['login'] = False
-	request.session['email'] = None
-	return redirect('login')
+def logout_view(request):
+    logout(request)
+    return redirect(login_view)

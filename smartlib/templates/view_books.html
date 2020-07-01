@@ -1,0 +1,45 @@
+{% extends '_struct.html' %}
+{% block content %}
+
+
+<div class="container">
+  <h2>Hi, {{ user.name }}</h2>
+</div>
+
+<div class="container">
+  <h2>Library Books</h2>
+  <p>Following books are available</p>            
+  <table id="books" class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th>Book ID</th>
+        <th>Book Name</th>
+        <th>Book Current Owner</th>
+        <th>Get Now</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for book in books %}
+      <tr>
+        <td>{{book.bid}}</td>
+        <td>{{book.bname}}</td>
+        <td>{{book.current_owner}}</td>
+        <td>
+          {% if book.available%}
+          <a href="{% url 'buy_book' bid=book.bid %}" class="btn btn-default"><span class="glyphicon glyphicon-shopping-cart"></span> Buy Now</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+
+{% block scripts%}
+<script type="text/javascript">
+  $(document).ready( function () {
+    $('#books').DataTable();
+} );
+</script>
+{% endblock %}
